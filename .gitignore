@@ -127,3 +127,9 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# pass
+pass.json
+csvFiles/
+loadFiles/
+
