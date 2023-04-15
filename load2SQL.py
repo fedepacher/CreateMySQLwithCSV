@@ -26,23 +26,35 @@ def run():
     load_path = 'loadFiles/'
     csv_path = 'csvFiles/'
     pass_file = 'pass.json'
+    fail_flag = False
 
     dir_list = os.listdir(load_path)
 
     # Convert xls file to csv and copy files to new folder
     for file in dir_list:
         if '.xls' in file:
-            df = pd.read_excel(load_path + file)
-            newfile, ext = file.split('.')
-            df.to_csv(csv_path + newfile.capitalize() + '.' + 'csv', index=None, header=True)
+            try:
+                df = pd.read_excel(load_path + file)
+                newfile, ext = file.split('.')
+                df.to_csv(csv_path + newfile.capitalize() + '.' + 'csv', index=None, header=True)
+            except:
+                print(f'Fail to open {load_path}{file}')
+                exit(0)
         elif '.csv' in file:
-            shutil.copyfile(load_path + file, csv_path + file)
+            try:
+                shutil.copyfile(load_path + file, csv_path + file)
+            except:
+                print(f'Fail to copy {load_path}{file} to {csv_path}')
+                exit(0)
 
     column_list = []
     dir_list = os.listdir(csv_path)
+
+    # Get CSV files
     csv_table_files = [file for file in dir_list if 'csv' in file]
 
     separator_list = []
+
     # Get column
     for file in csv_table_files:
         with open(csv_path + file, 'r', encoding='UTF-8') as f:
@@ -73,10 +85,14 @@ def run():
 
 
     # Get Workbench and sudo passwords from internal file
-    with open(pass_file, 'r') as file:
-        data = json.load(file)
-        pass_db = data["workbench"]
-        pass_sudo = data["linux"]
+    try:
+        with open(pass_file, 'r') as file:
+            data = json.load(file)
+            pass_db = data["workbench"]
+            pass_sudo = data["linux"]
+    except:
+        print(f'The {pass_file} doe not exist. Please read the README.md file')
+        exit(0)
 
     # Connect to mySQL data base
     connection = MySQL_Class(password=pass_db)
@@ -101,18 +117,26 @@ def run():
     if 'linux' in str.lower(os_var):
         path_to_csv = f'/var/lib/mysql/{db_name}/'
         # Copy file to OS folder to import tables
-        for file in csv_table_files:
-            cmd = ['sudo', 'cp', csv_path + file, path_to_csv]
-            pw2 = pass_sudo.encode()
-            proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-                                    stderr=subprocess.PIPE).communicate(input=pw2)
+        try:
+            for file in csv_table_files:
+                cmd = ['sudo', 'cp', csv_path + file, path_to_csv]
+                pw2 = pass_sudo.encode()
+                proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                                        stderr=subprocess.PIPE).communicate(input=pw2)
+        except:
+            print(f'Some errors occur during the copy file process in {os_var} system. Please read the README.md file')
+            exit(0)
     elif 'win' in str.lower(os_var):
-        path_to_csv = r'C:\\ProgramData\\MySQL\\MySQL Server 8.0\\Uploads\\'
-        for file in csv_table_files:
-            shutil.copyfile(csv_path + file, path_to_csv + file)
+        try:
+            path_to_csv = r'C:\\ProgramData\\MySQL\\MySQL Server 8.0\\Uploads\\'
+            for file in csv_table_files:
+                shutil.copyfile(csv_path + file, path_to_csv + file)
+        except:
+            print(f'Some errors occur during the copy file process in {os_var} system. Please read the README.md file')
+            exit(0)
     else:
         print('No Operating System detected')
-        exit
+        exit(0)
 
     # fill tables
     for file, separator, columns in zip(csv_table_files, separator_list, column_list):
@@ -136,3 +160,4 @@ if __name__ == '__main__' :
 
     # calling run function
     run()
+    exit(1)
