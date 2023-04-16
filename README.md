@@ -1,6 +1,6 @@
 # CreateMySQLwithCSV
 
-Script to create MySQL DB based based on CSV or Excel files.
+Script to create MySQL DB based on CSV or Excel files.
 
 ## Run code
 

@@ -26,7 +26,6 @@ def run():
     load_path = 'loadFiles/'
     csv_path = 'csvFiles/'
     pass_file = 'pass.json'
-    fail_flag = False
 
     dir_list = os.listdir(load_path)
 
@@ -64,6 +63,15 @@ def run():
             index = re.search(regex, aux_var).start()
             separator_list.append(aux_var[index])
             column_list.append(column)
+
+    # Check for unknow characters when files are not UTF-8
+    for index in range(len(column_list)):
+        col = []
+        for column in column_list[index]:
+            if '\ufeff' in column:
+                column = column.replace('\ufeff', '')
+            col.append(column)
+        column_list[index] = col
 
     # Get queries to create tables
     query_list = []
@@ -160,4 +168,3 @@ if __name__ == '__main__' :
 
     # calling run function
     run()
-    exit(1)
