@@ -23,8 +23,18 @@ def run():
     args = arg_parser.parse_args()
 
     db_name = args.db_name
-    load_path = 'loadFiles/'
-    csv_path = 'csvFiles/'
+    # Get OS
+    os_var = platform.system()
+    if 'linux' in str.lower(os_var):
+        load_path = 'loadFiles/'
+        csv_path = 'csvFiles/'
+    elif 'win' in str.lower(os_var):
+        load_path = 'loadFiles\\'
+        csv_path = 'csvFiles\\'
+    else:
+        print('No Operating System detected')
+        exit(0)
+        
     pass_file = 'pass.json'
 
     dir_list = os.listdir(load_path)
@@ -119,8 +129,7 @@ def run():
     query = 'set global local_infile=true;'
     connection.execute_query(query)
 
-    # Get OS
-    os_var = platform.system()
+    # Copy files to the mysql folder
     path_to_csv = ''
     if 'linux' in str.lower(os_var):
         path_to_csv = f'/var/lib/mysql/{db_name}/'
