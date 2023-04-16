@@ -7,8 +7,10 @@ Script to create MySQL DB based on CSV or Excel files.
 
 In order to run the code, the following libraries must be installed:
 
-- Pandas
-- Mysql-connector-python
+- Pandas (`python -m pip install pandas`)
+- Mysql-connector (`python -m pip install mysql-connector`)
+- openpyxl (`python -m pip install openpyxl`)
+- xlrd (`python -m pip install xlrd`)
 
 
 ## Run code
