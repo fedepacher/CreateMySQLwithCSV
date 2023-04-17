@@ -24,6 +24,8 @@ def run():
     args = arg_parser.parse_args()
 
     db_name = args.db_name
+    csv_path = ''
+    load_path = ''
     # Get OS
     os_var = platform.system()
     if 'linux' in str.lower(os_var):
@@ -88,12 +90,12 @@ def run():
             column_list.append(column)
 
     # Check for unknow characters when files are not UTF-8
-    for index in range(len(column_list)):
+    for index, column in enumerate(column_list):
         col = []
-        for column in column_list[index]:
-            if '\ufeff' in column:
-                column = column.replace('\ufeff', '')
-            col.append(column)
+        for item in column:
+            if '\ufeff' in item:
+                item = item.replace('\ufeff', '')
+            col.append(item)
         column_list[index] = col
 
     # Get queries to create tables
