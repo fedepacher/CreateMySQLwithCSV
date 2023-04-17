@@ -3,7 +3,7 @@ import mysql.connector
 from mysql.connector import Error
 
 
-class MySQL_Class:
+class MySQLClass:
     """Class to encapsulate MySQL method"""
 
     def __init__(self, host_name='localhost', user_name='root', password=''):
