@@ -9,7 +9,7 @@ import argparse
 import json
 import pandas as pd
 
-from mysql_lib import MySQL_Class
+from mysql_lib import MySQLClass
 
 
 def get_path(os_var=''):
@@ -212,7 +212,7 @@ def run():
     pass_db, pass_sudo = get_passwords()
 
     # Connect to mySQL data base
-    connection = MySQL_Class(password=pass_db)
+    connection = MySQLClass(password=pass_db)
 
     # Create database if not exist
     create_database_query = f'CREATE DATABASE IF NOT EXISTS {db_name}'
