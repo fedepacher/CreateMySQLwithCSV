@@ -29,8 +29,10 @@ python3 load2SQL.py -d 'test'
 
 ## Folders
 
-The `loadFiles` folder will contain all the `csv`, `xls` and `xlsx` files to be converted to `csv` extension. In case this folder does not exist, it should be created.<br>
-In the `csvFiles` will be copied all the `csv` files and then, those file will be copied to the respective folder in order to be recognized for Workbent to be loaded. In case this folder does not exist, it should be created.<br>
+The `loadFiles` folder will contain all the `csv`, `xls` and `xlsx` files to be converted to `csv` extension.
+In case this folder does not exist, it should be created.<br>
+In the `csvFiles` will be created automatically and it will contain all the `csv` files.
+Those file will be copied to the respective folder in order to be recognized for Workbench and load them correctly.<br>
 
 
 ## Password

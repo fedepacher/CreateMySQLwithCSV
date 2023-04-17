@@ -36,6 +36,15 @@ def run():
         print('No Operating System detected')
         sys.exit(0)
 
+    # Create csv_path directory if not exist
+    is_exist = os.path.exists(csv_path)
+    if not is_exist:
+        try:
+            os.makedirs(csv_path)
+        except FileExistsError:
+            print(f'Cannot create {csv_path}')
+            sys.exit(0)
+
     pass_file = 'pass.json'
 
     dir_list = os.listdir(load_path)
