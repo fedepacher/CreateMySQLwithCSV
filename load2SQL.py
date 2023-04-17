@@ -7,6 +7,7 @@ import platform
 import json
 import subprocess
 import argparse
+import sys
 
 
 def run():
@@ -18,7 +19,7 @@ def run():
     arg_parser.add_argument('-u', '--user_name', metavar='<user_name>', type=str, required=False,
                             default='root', help='Workbench username', dest='user_name')
     arg_parser.add_argument('-d', '--database', metavar='<database>', type=str, required=False,
-                            default='db_test', help='Database name', dest='db_name')
+                            default='test_db', help='Database name', dest='db_name')
 
     args = arg_parser.parse_args()
 
@@ -33,8 +34,8 @@ def run():
         csv_path = 'csvFiles\\'
     else:
         print('No Operating System detected')
-        exit(0)
-        
+        sys.exit(0)
+
     pass_file = 'pass.json'
 
     dir_list = os.listdir(load_path)
@@ -43,18 +44,21 @@ def run():
     for file in dir_list:
         if '.xls' in file:
             try:
-                df = pd.read_excel(load_path + file)
-                newfile, ext = file.split('.')
-                df.to_csv(csv_path + newfile.capitalize() + '.' + 'csv', index=None, header=True)
-            except:
+                df_data = pd.read_excel(load_path + file)
+                newfile, _ = file.split('.')
+                df_data.to_csv(csv_path + newfile.capitalize() + '.' + 'csv',
+                               index=None, header=True)
+            except Exception as error:
+                print(error)
                 print(f'Fail to open {load_path}{file}')
-                exit(0)
+                sys.exit(0)
         elif '.csv' in file:
             try:
                 shutil.copyfile(load_path + file, csv_path + file)
-            except:
+            except Exception as error:
+                print(error)
                 print(f'Fail to copy {load_path}{file} to {csv_path}')
-                exit(0)
+                sys.exit(0)
 
     column_list = []
     dir_list = os.listdir(csv_path)
@@ -65,10 +69,10 @@ def run():
     separator_list = []
 
     # Get column
-    for file in csv_table_files:
-        with open(csv_path + file, 'r', encoding='UTF-8') as f:
+    for csv_file in csv_table_files:
+        with open(csv_path + csv_file, 'r', encoding='UTF-8') as file:
             regex = '[,;|-]'
-            aux_var = f.readline().strip()
+            aux_var = file.readline().strip()
             column = re.split(regex, aux_var)
             index = re.search(regex, aux_var).start()
             separator_list.append(aux_var[index])
@@ -86,7 +90,7 @@ def run():
     # Get queries to create tables
     query_list = []
     for file, elements in zip(csv_table_files, column_list):
-        table, ext = file.split('.')
+        table, _ = file.split('.')
         var_table = f'CREATE TABLE IF NOT EXISTS {table} ('
         for index, item in enumerate(elements):
             item = item.capitalize()
@@ -97,20 +101,21 @@ def run():
             else:
                 var_table += f'{item} VARCHAR(200)'
             if index != len(elements) - 1:
-                var_table += f','
-        var_table += f') ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci;'
+                var_table += ','
+        var_table += ') ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci;'
         query_list.append(var_table)
 
 
     # Get Workbench and sudo passwords from internal file
     try:
-        with open(pass_file, 'r') as file:
+        with open(pass_file, 'r', encoding='UTF-8') as file:
             data = json.load(file)
             pass_db = data["workbench"]
             pass_sudo = data["linux"]
-    except:
+    except Exception as error:
+        print(error)
         print(f'The {pass_file} doe not exist. Please read the README.md file')
-        exit(0)
+        sys.exit(0)
 
     # Connect to mySQL data base
     connection = MySQL_Class(password=pass_db)
@@ -138,32 +143,36 @@ def run():
             for file in csv_table_files:
                 cmd = ['sudo', 'cp', csv_path + file, path_to_csv]
                 pw2 = pass_sudo.encode()
-                proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-                                        stderr=subprocess.PIPE).communicate(input=pw2)
-        except:
-            print(f'Some errors occur during the copy file process in {os_var} system. Please read the README.md file')
-            exit(0)
+                subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                                 stderr=subprocess.PIPE).communicate(input=pw2)
+        except Exception as error:
+            print(error)
+            print(f'Some errors occur during the copy file process in {os_var} system. '\
+                  'Please read the README.md file')
+            sys.exit(0)
     elif 'win' in str.lower(os_var):
         try:
             path_to_csv = r'C:\\ProgramData\\MySQL\\MySQL Server 8.0\\Uploads\\'
             for file in csv_table_files:
                 shutil.copyfile(csv_path + file, path_to_csv + file)
-        except:
-            print(f'Some errors occur during the copy file process in {os_var} system. Please read the README.md file')
-            exit(0)
+        except Exception as error:
+            print(error)
+            print(f'Some errors occur during the copy file process in {os_var} system. ' \
+                  'Please read the README.md file')
+            sys.exit(0)
     else:
         print('No Operating System detected')
-        exit(0)
+        sys.exit(0)
 
     # fill tables
     for file, separator, columns in zip(csv_table_files, separator_list, column_list):
-        table, ext = file.split('.')
+        table, _ = file.split('.')
         column_field = '(' + ','.join(columns) + ')'
 
         # print(column_field)
         query = f"LOAD DATA INFILE '{file}' INTO TABLE {table} " \
-                f"FIELDS TERMINATED BY '{separator}' ENCLOSED BY '' ESCAPED BY '' LINES TERMINATED BY '\n' " \
-                f"IGNORE 1 LINES {column_field};"
+                f"FIELDS TERMINATED BY '{separator}' ENCLOSED BY '' ESCAPED BY '' " \
+                f"LINES TERMINATED BY '\n' IGNORE 1 LINES {column_field};"
 
         print(f'Tabla: {table}')
         connection.execute_query(query) #
