@@ -1,33 +1,30 @@
-from mysql_lib import MySQL_Class
+"""Module providing file insertion to mysql database."""
 import os
-import pandas as pd
-import re
-import shutil
-import platform
-import json
-import subprocess
-import argparse
 import sys
+import subprocess
+import platform
+import shutil
+import re
+import argparse
+import json
+import pandas as pd
+
+from mysql_lib import MySQL_Class
 
 
-def run():
+def get_path(os_var=''):
+    """Get path to read and store csv files.
 
-    arg_parser = argparse.ArgumentParser()
+    Args:
+        os_var (str): Operating system.
 
-    arg_parser.add_argument('-t', '--host_name', metavar='<host_name>', type=str, required=False,
-                            default='localhost', help='Workbench hostname', dest='host_name')
-    arg_parser.add_argument('-u', '--user_name', metavar='<user_name>', type=str, required=False,
-                            default='root', help='Workbench username', dest='user_name')
-    arg_parser.add_argument('-d', '--database', metavar='<database>', type=str, required=False,
-                            default='test_db', help='Database name', dest='db_name')
-
-    args = arg_parser.parse_args()
-
-    db_name = args.db_name
+    Returns:
+        (str): Folder to load files.
+        (str): Folder to store csv files.
+    """
     csv_path = ''
     load_path = ''
-    # Get OS
-    os_var = platform.system()
+
     if 'linux' in str.lower(os_var):
         load_path = 'loadFiles/'
         csv_path = 'csvFiles/'
@@ -38,7 +35,15 @@ def run():
         print('No Operating System detected')
         sys.exit(0)
 
-    # Create csv_path directory if not exist
+    return load_path, csv_path
+
+
+def create_csv_store_path(csv_path=''):
+    """Create folder to store csv files if not exist.
+
+    Args:
+        csv_path (str): Path where CSV files will be stored.
+    """
     is_exist = os.path.exists(csv_path)
     if not is_exist:
         try:
@@ -47,12 +52,16 @@ def run():
             print(f'Cannot create {csv_path}')
             sys.exit(0)
 
-    pass_file = 'pass.json'
 
-    dir_list = os.listdir(load_path)
+def convert_file_to_csv(file_list=None, load_path='', csv_path=''):
+    """Convert xls file to csv and store csv files to new folder.
 
-    # Convert xls file to csv and copy files to new folder
-    for file in dir_list:
+    Args:
+        file_list (list): File list that contains csv and/or excel files.
+        load_path (str): Path that contains files to be converted.
+        csv_path (str): Path where CSV files will be stored.
+    """
+    for file in file_list:
         if '.xls' in file:
             try:
                 df_data = pd.read_excel(load_path + file)
@@ -71,15 +80,16 @@ def run():
                 print(f'Fail to copy {load_path}{file} to {csv_path}')
                 sys.exit(0)
 
-    column_list = []
-    dir_list = os.listdir(csv_path)
 
-    # Get CSV files
-    csv_table_files = [file for file in dir_list if 'csv' in file]
+def get_column_from_csv(csv_table_files=None, separator_list=None, column_list=None, csv_path=''):
+    """Get column names list from csv files
 
-    separator_list = []
-
-    # Get column
+    Args:
+        csv_table_files (list): File list that contains csv files.
+        separator_list (list): List where separator will be stored.
+        column_list (list): List where csv columns will be stored.
+        csv_path (str): Path where CSV files are stored.
+    """
     for csv_file in csv_table_files:
         with open(csv_path + csv_file, 'r', encoding='UTF-8') as file:
             regex = '[,;|-]'
@@ -89,7 +99,13 @@ def run():
             separator_list.append(aux_var[index])
             column_list.append(column)
 
-    # Check for unknow characters when files are not UTF-8
+
+def check_unknow_char(column_list=None):
+    """Check for unknow characters when files are not UTF-8
+
+     Args:
+        column_list (list): Column list to be returned.
+    """
     for index, column in enumerate(column_list):
         col = []
         for item in column:
@@ -98,8 +114,15 @@ def run():
             col.append(item)
         column_list[index] = col
 
-    # Get queries to create tables
-    query_list = []
+
+def get_query_table(csv_table_files=None, column_list=None, query_list=None):
+    """Get queries to create tables
+
+    Args:
+        csv_table_files (list): File list that contains csv files.
+        column_list (list): List where csv columns are stored.
+        query_list (list): List of query to create MySQL table.
+    """
     for file, elements in zip(csv_table_files, column_list):
         table, _ = file.split('.')
         var_table = f'CREATE TABLE IF NOT EXISTS {table} ('
@@ -117,16 +140,76 @@ def run():
         query_list.append(var_table)
 
 
-    # Get Workbench and sudo passwords from internal file
+def get_passwords():
+    """Get Workbench and sudo passwords from internal file
+
+    Returns:
+        (str): Database Workbench password.
+        (str): Linux admin password.
+    """
+    pass_file = 'pass.json'
     try:
         with open(pass_file, 'r', encoding='UTF-8') as file:
             data = json.load(file)
             pass_db = data["workbench"]
             pass_sudo = data["linux"]
-    except Exception as error:
-        print(error)
-        print(f'The {pass_file} doe not exist. Please read the README.md file')
+    except FileNotFoundError:
+        print(f'The {pass_file} file does not exist. Please read the README.md file')
         sys.exit(0)
+
+    return pass_db, pass_sudo
+
+
+def run():
+    """Execute the code to convert csv files into MySQL database"""
+    column_list = []
+    separator_list = []
+    query_list = []
+    path_to_csv = ''
+
+    arg_parser = argparse.ArgumentParser()
+
+    arg_parser.add_argument('-t', '--host_name', metavar='<host_name>', type=str, required=False,
+                            default='localhost', help='Workbench hostname', dest='host_name')
+    arg_parser.add_argument('-u', '--user_name', metavar='<user_name>', type=str, required=False,
+                            default='root', help='Workbench username', dest='user_name')
+    arg_parser.add_argument('-d', '--database', metavar='<database>', type=str, required=False,
+                            default='test_db', help='Database name', dest='db_name')
+
+    args = arg_parser.parse_args()
+
+    db_name = args.db_name
+    os_var = platform.system()
+
+    # Get path for storing and reading csv file
+    load_path, csv_path = get_path(os_var=os_var)
+
+
+    # Create csv_path directory if not exist
+    create_csv_store_path(csv_path=csv_path)
+
+    file_list = os.listdir(load_path)
+
+    # Convert xls file to csv and copy files to new folder
+    convert_file_to_csv(file_list=file_list, load_path=load_path, csv_path=csv_path)
+
+    file_list = os.listdir(csv_path)
+
+    # Get CSV files
+    csv_table_files = [file for file in file_list if 'csv' in file]
+
+    # Get column and return list of column and separators
+    get_column_from_csv(csv_table_files=csv_table_files, separator_list=separator_list,
+                        column_list=column_list, csv_path=csv_path)
+
+    # Check for unknow characters when files are not UTF-8 and return value in clolumn_list
+    check_unknow_char(column_list=column_list)
+
+    # Get queries to create tables, return value in query_list
+    get_query_table(query_list=query_list, csv_table_files=csv_table_files, column_list=column_list)
+
+    # Get Workbench and super user Linux password passwords to copy file as admin
+    pass_db, pass_sudo = get_passwords()
 
     # Connect to mySQL data base
     connection = MySQL_Class(password=pass_db)
@@ -146,7 +229,6 @@ def run():
     connection.execute_query(query)
 
     # Copy files to the mysql folder
-    path_to_csv = ''
     if 'linux' in str.lower(os_var):
         path_to_csv = f'/var/lib/mysql/{db_name}/'
         # Copy file to OS folder to import tables

@@ -1,3 +1,4 @@
+"""Module providing function mysql database connection."""
 import mysql.connector
 from mysql.connector import Error
 
