@@ -246,6 +246,11 @@ def run():
     elif 'win' in str.lower(os_var):
         try:
             path_to_csv = r'C:\\ProgramData\\MySQL\\MySQL Server 8.0\\Uploads\\'
+            # In case the following error in Windows OS
+            # Error: '1290 (HY000): The MySQL server is running with the --secure-file-priv
+            # option so it cannot execute this statement'
+            # Uncomment the following line and follow the Troubleshoot guide in README.md.
+            # path_to_csv = fr'C:\\ProgramData\\MySQL\\MySQL Server 8.0\\Data\\{db_name}\\'
             for file in csv_table_files:
                 shutil.copyfile(csv_path + file, path_to_csv + file)
         except Exception as error:

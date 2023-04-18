@@ -8,7 +8,7 @@ Script to create MySQL DB based on CSV or Excel files.
 In order to run the code, the following libraries must be installed:
 
 - Pandas (`python -m pip install pandas`)
-- Mysql-connector (`python -m pip install mysql-connector`)
+- Mysql-connector (`python -m pip install mysql-connector-python`)
 - openpyxl (`python -m pip install openpyxl`)
 - xlrd (`python -m pip install xlrd`)
 
@@ -47,3 +47,38 @@ The user has to create a `pass.json` file with the following content:
 ```
 
 Please complete the password with your own password, otherwise the script will crush. In case Windows OS, linux admin password is not required, but you should not delete the tag `linux`.
+
+
+## WINDOWS SYSTEM TROUBLESHOOT
+
+In case the following error appear in Windows OS
+
+```
+Error: '1290 (HY000): The MySQL server is running with the --secure-file-priv option so it cannot execute this statement'
+```
+
+Uncomment the following line in the `load_2_mysql.py` file.
+
+```
+path_to_csv = fr'C:\\ProgramData\\MySQL\\MySQL Server 8.0\\Data\\{db_name}\\'
+```
+
+Then, in Windows system, go to the following path:
+
+```
+C:\ProgramData\MySQL\MySQL Server 8.0
+```
+
+Open the file `my.ini` and replace the line:
+
+```
+secure-file-priv="C:/ProgramData/MySQL/MySQL Server 8.0/Uploads"
+```
+
+By the following line:
+
+```
+secure-file-priv=""
+```
+
+Save the file and restart `MySQL80` service. To do so, got to Task manager -> Services tag, find `MySQL80`, right click and choose Restart option.
