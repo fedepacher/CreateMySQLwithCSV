@@ -82,7 +82,7 @@ def convert_file_to_csv(file_list=None, load_path='', csv_path=''):
 
 
 def get_column_from_csv(csv_table_files=None, separator_list=None, column_list=None, csv_path=''):
-    """Get column names list from csv files
+    """Get column names list from csv files.
 
     Args:
         csv_table_files (list): File list that contains csv files.
@@ -101,7 +101,7 @@ def get_column_from_csv(csv_table_files=None, separator_list=None, column_list=N
 
 
 def check_unknow_char(column_list=None):
-    """Check for unknow characters when files are not UTF-8
+    """Check for unknow characters when files are not UTF-8.
 
      Args:
         column_list (list): Column list to be returned.
@@ -116,7 +116,7 @@ def check_unknow_char(column_list=None):
 
 
 def get_query_table(csv_table_files=None, column_list=None, query_list=None):
-    """Get queries to create tables
+    """Get queries to create tables.
 
     Args:
         csv_table_files (list): File list that contains csv files.
@@ -141,7 +141,7 @@ def get_query_table(csv_table_files=None, column_list=None, query_list=None):
 
 
 def get_passwords():
-    """Get Workbench and sudo passwords from internal file
+    """Get Workbench and sudo passwords from internal file.
 
     Returns:
         (str): Database Workbench password.
@@ -160,12 +160,109 @@ def get_passwords():
     return pass_db, pass_sudo
 
 
+def database_function(connection=None, db_name=''):
+    """Create database if not exist and set database internal configurations.
+
+    Args:
+        connection (mysql_lib.MySQLClass): Connection object to mysql.
+        db_name (str): Database name.
+    """
+    create_database_query = f'CREATE DATABASE IF NOT EXISTS {db_name}'
+    connection.create_database(create_database_query)
+
+    # Create to the data base
+    connection.create_db_connection(db_name) # Connect to the Database
+
+    # Set local configuration
+    query = 'set global local_infile=true;'
+    connection.execute_query(query)
+
+
+def database_create_tables(connection=None, query_list=None):
+    """Create database tables.
+
+    Args:
+        connection (mysql_lib.MySQLClass): Connection object to mysql.
+        query_list (list): Query list to create tables.
+    """
+    for element in query_list:
+        connection.execute_query(element)
+
+
+def copy_file_to_mysql_folder(csv_table_files=None, os_var='', db_name='', csv_path='',
+                              pass_sudo=''):
+    """Copy files to mysql folder to be read by Workbench.
+
+    Args:
+        csv_table_files (list): CSV files list.
+        os_var (str): Operating system.
+        db_name (str): Database name.
+        csv_path (str): Path where CSV files are stored.
+        pass_sudo (str): Linux admin password.
+    """
+    path_to_csv = ''
+    if 'linux' in str.lower(os_var):
+        path_to_csv = f'/var/lib/mysql/{db_name}/'
+        # Copy file to OS folder to import tables
+        try:
+            for file in csv_table_files:
+                cmd = ['sudo', 'cp', csv_path + file, path_to_csv]
+                pw2 = pass_sudo.encode()
+                subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                                 stderr=subprocess.PIPE).communicate(input=pw2)
+        except Exception as error:
+            print(error)
+            print(f'Some errors occur during the copy file process in {os_var} system. '\
+                  'Please read the README.md file')
+            sys.exit(0)
+    elif 'win' in str.lower(os_var):
+        try:
+            path_to_csv = r'C:\\ProgramData\\MySQL\\MySQL Server 8.0\\Uploads\\'
+            # In case the following error in Windows OS
+            # Error: '1290 (HY000): The MySQL server is running with the --secure-file-priv
+            # option so it cannot execute this statement'
+            # Uncomment the following line and follow the Troubleshoot guide in README.md.
+            # path_to_csv = fr'C:\\ProgramData\\MySQL\\MySQL Server 8.0\\Data\\{db_name}\\'
+            for file in csv_table_files:
+                shutil.copyfile(csv_path + file, path_to_csv + file)
+        except Exception as error:
+            print(error)
+            print(f'Some errors occur during the copy file process in {os_var} system. ' \
+                  'Please read the README.md file')
+            sys.exit(0)
+    else:
+        print('No Operating System detected')
+        sys.exit(0)
+
+
+def fill_database_tables(connection=None, csv_table_files=None, separator_list=None,
+                         column_list=None):
+    """Load database tables with CSV files
+
+    Args:
+        connection (mysql_lib.MySQLClass): Connection object to mysql.
+        csv_table_files (list): CSV files list.
+        separator_list (list): List with CVS columns separator.
+        column_list (list): Table column list.
+    """
+    for file, separator, columns in zip(csv_table_files, separator_list, column_list):
+        table, _ = file.split('.')
+        column_field = '(' + ','.join(columns) + ')'
+
+        # print(column_field)
+        query = f"LOAD DATA INFILE '{file}' INTO TABLE {table} " \
+                f"FIELDS TERMINATED BY '{separator}' ENCLOSED BY '' ESCAPED BY '' " \
+                f"LINES TERMINATED BY '\n' IGNORE 1 LINES {column_field};"
+
+        print(f'Tabla: {table}')
+        connection.execute_query(query) #
+
+
 def run():
     """Execute the code to convert csv files into MySQL database"""
     column_list = []
     separator_list = []
     query_list = []
-    path_to_csv = ''
 
     arg_parser = argparse.ArgumentParser()
 
@@ -214,66 +311,19 @@ def run():
     # Connect to mySQL data base
     connection = MySQLClass(password=pass_db)
 
-    # Create database if not exist
-    create_database_query = f'CREATE DATABASE IF NOT EXISTS {db_name}'
-    connection.create_database(create_database_query)
+    # Create database
+    database_function(connection=connection, db_name=db_name)
 
-    # Create to the data base
-    connection.create_db_connection(db_name) # Connect to the Database
+    # Create tables
+    database_create_tables(connection=connection, query_list=query_list)
 
-    # create tables
-    for element in query_list:
-        connection.execute_query(element)
+    # Copy files to mysql folder
+    copy_file_to_mysql_folder(csv_table_files=csv_table_files, os_var=os_var, db_name=db_name,
+                              csv_path=csv_path, pass_sudo=pass_sudo)
 
-    query = 'set global local_infile=true;'
-    connection.execute_query(query)
-
-    # Copy files to the mysql folder
-    if 'linux' in str.lower(os_var):
-        path_to_csv = f'/var/lib/mysql/{db_name}/'
-        # Copy file to OS folder to import tables
-        try:
-            for file in csv_table_files:
-                cmd = ['sudo', 'cp', csv_path + file, path_to_csv]
-                pw2 = pass_sudo.encode()
-                subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-                                 stderr=subprocess.PIPE).communicate(input=pw2)
-        except Exception as error:
-            print(error)
-            print(f'Some errors occur during the copy file process in {os_var} system. '\
-                  'Please read the README.md file')
-            sys.exit(0)
-    elif 'win' in str.lower(os_var):
-        try:
-            path_to_csv = r'C:\\ProgramData\\MySQL\\MySQL Server 8.0\\Uploads\\'
-            # In case the following error in Windows OS
-            # Error: '1290 (HY000): The MySQL server is running with the --secure-file-priv
-            # option so it cannot execute this statement'
-            # Uncomment the following line and follow the Troubleshoot guide in README.md.
-            # path_to_csv = fr'C:\\ProgramData\\MySQL\\MySQL Server 8.0\\Data\\{db_name}\\'
-            for file in csv_table_files:
-                shutil.copyfile(csv_path + file, path_to_csv + file)
-        except Exception as error:
-            print(error)
-            print(f'Some errors occur during the copy file process in {os_var} system. ' \
-                  'Please read the README.md file')
-            sys.exit(0)
-    else:
-        print('No Operating System detected')
-        sys.exit(0)
-
-    # fill tables
-    for file, separator, columns in zip(csv_table_files, separator_list, column_list):
-        table, _ = file.split('.')
-        column_field = '(' + ','.join(columns) + ')'
-
-        # print(column_field)
-        query = f"LOAD DATA INFILE '{file}' INTO TABLE {table} " \
-                f"FIELDS TERMINATED BY '{separator}' ENCLOSED BY '' ESCAPED BY '' " \
-                f"LINES TERMINATED BY '\n' IGNORE 1 LINES {column_field};"
-
-        print(f'Tabla: {table}')
-        connection.execute_query(query) #
+    # Fill tables
+    fill_database_tables(connection=connection, csv_table_files=csv_table_files,
+                         separator_list=separator_list, column_list=column_list)
 
 
 # Driver Code
