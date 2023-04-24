@@ -53,14 +53,14 @@ def create_csv_store_path(csv_path=''):
             sys.exit(0)
 
 
-def convert_file_to_csv(file_list=None, load_path='', csv_path=''):
+def convert_file_to_csv(load_path='', csv_path=''):
     """Convert xls file to csv and store csv files to new folder.
 
     Args:
-        file_list (list): File list that contains csv and/or excel files.
         load_path (str): Path that contains files to be converted.
         csv_path (str): Path where CSV files will be stored.
     """
+    file_list = os.listdir(load_path)
     for file in file_list:
         if '.xls' in file:
             try:
@@ -281,14 +281,11 @@ def run():
     # Get path for storing and reading csv file
     load_path, csv_path = get_path(os_var=os_var)
 
-
     # Create csv_path directory if not exist
     create_csv_store_path(csv_path=csv_path)
 
-    file_list = os.listdir(load_path)
-
     # Convert xls file to csv and copy files to new folder
-    convert_file_to_csv(file_list=file_list, load_path=load_path, csv_path=csv_path)
+    convert_file_to_csv(load_path=load_path, csv_path=csv_path)
 
     file_list = os.listdir(csv_path)
 
