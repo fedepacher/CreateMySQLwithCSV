@@ -7,6 +7,7 @@ import shutil
 import re
 import argparse
 import json
+import logging
 import pandas as pd
 
 from mysql_lib import MySQLClass
@@ -32,9 +33,10 @@ def get_path(os_var=''):
         load_path = 'loadFiles\\'
         csv_path = 'csvFiles\\'
     else:
-        print('No Operating System detected')
+        logging.error('No Operating System detected')
         sys.exit(0)
 
+    logging.info('%s Operating System detected', os_var)
     return load_path, csv_path
 
 
@@ -49,8 +51,9 @@ def create_csv_store_path(csv_path=''):
         try:
             os.makedirs(csv_path)
         except FileExistsError:
-            print(f'Cannot create {csv_path}')
+            logging.error('Cannot create %s', csv_path)
             sys.exit(0)
+    logging.info('%s folder created', csv_path)
 
 
 def convert_file_to_csv(load_path='', csv_path=''):
@@ -69,16 +72,17 @@ def convert_file_to_csv(load_path='', csv_path=''):
                 df_data.to_csv(csv_path + newfile.capitalize() + '.' + 'csv',
                                index=None, header=True)
             except Exception as error:
-                print(error)
-                print(f'Fail to open {load_path}{file}')
+                logging.error(error)
+                logging.error('Fail to open %s%s', load_path, file)
                 sys.exit(0)
         elif '.csv' in file:
             try:
                 shutil.copyfile(load_path + file, csv_path + file)
             except Exception as error:
-                print(error)
-                print(f'Fail to copy {load_path}{file} to {csv_path}')
+                logging.error(error)
+                logging.error('Fail to copy %s%s to %s', load_path, file, csv_path)
                 sys.exit(0)
+        logging.debug('%s file copied to %s', file, csv_path)
 
 
 def get_column_from_csv(csv_table_files=None, separator_list=None, column_list=None, csv_path=''):
@@ -98,6 +102,7 @@ def get_column_from_csv(csv_table_files=None, separator_list=None, column_list=N
             index = re.search(regex, aux_var).start()
             separator_list.append(aux_var[index])
             column_list.append(column)
+    logging.debug('Got column names')
 
 
 def check_unknow_char(column_list=None):
@@ -113,6 +118,7 @@ def check_unknow_char(column_list=None):
                 item = item.replace('\ufeff', '')
             col.append(item)
         column_list[index] = col
+    logging.debug('Checked for unknow characters')
 
 
 def get_query_table(csv_table_files=None, column_list=None, query_list=None):
@@ -138,6 +144,7 @@ def get_query_table(csv_table_files=None, column_list=None, query_list=None):
                 var_table += ','
         var_table += ') ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci;'
         query_list.append(var_table)
+    logging.debug('Got queries to create tables')
 
 
 def get_passwords():
@@ -153,8 +160,9 @@ def get_passwords():
             data = json.load(file)
             pass_db = data["workbench"]
             pass_sudo = data["linux"]
+            logging.debug('Got passwords')
     except FileNotFoundError:
-        print(f'The {pass_file} file does not exist. Please read the README.md file')
+        logging.error('The %s file does not exist. Please read the README.md file', pass_file)
         sys.exit(0)
 
     return pass_db, pass_sudo
@@ -211,9 +219,9 @@ def copy_file_to_mysql_folder(csv_table_files=None, os_var='', db_name='', csv_p
                 subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                                  stderr=subprocess.PIPE).communicate(input=pw2)
         except Exception as error:
-            print(error)
-            print(f'Some errors occur during the copy file process in {os_var} system. '\
-                  'Please read the README.md file')
+            logging.error(error)
+            logging.error('Some errors occur during the copy file process in %s system. '\
+                         'Please read the README.md file', os_var)
             sys.exit(0)
     elif 'win' in str.lower(os_var):
         try:
@@ -226,13 +234,14 @@ def copy_file_to_mysql_folder(csv_table_files=None, os_var='', db_name='', csv_p
             for file in csv_table_files:
                 shutil.copyfile(csv_path + file, path_to_csv + file)
         except Exception as error:
-            print(error)
-            print(f'Some errors occur during the copy file process in {os_var} system. ' \
-                  'Please read the README.md file')
+            logging.error(error)
+            logging.error('Some errors occur during the copy file process in %s system. ' \
+                  'Please read the README.md file', os_var)
             sys.exit(0)
     else:
-        print('No Operating System detected')
+        logging.error('No Operating System detected')
         sys.exit(0)
+    logging.debug('Files copied to %s', path_to_csv)
 
 
 def fill_database_tables(connection=None, csv_table_files=None, separator_list=None,
@@ -249,13 +258,12 @@ def fill_database_tables(connection=None, csv_table_files=None, separator_list=N
         table, _ = file.split('.')
         column_field = '(' + ','.join(columns) + ')'
 
-        # print(column_field)
         query = f"LOAD DATA INFILE '{file}' INTO TABLE {table} " \
                 f"FIELDS TERMINATED BY '{separator}' ENCLOSED BY '' ESCAPED BY '' " \
                 f"LINES TERMINATED BY '\n' IGNORE 1 LINES {column_field};"
 
-        print(f'Tabla: {table}')
-        connection.execute_query(query) #
+        logging.info('Tabla: %s', table)
+        connection.execute_query(query)
 
 
 def run():
@@ -306,7 +314,7 @@ def run():
     pass_db, pass_sudo = get_passwords()
 
     # Connect to mySQL data base
-    connection = MySQLClass(password=pass_db)
+    connection = MySQLClass(password=pass_db, logging=logging)
 
     # Create database
     database_function(connection=connection, db_name=db_name)
@@ -326,8 +334,15 @@ def run():
 # Driver Code
 if __name__ == '__main__' :
 
+    # Log configuration
+    LOG_FILE = 'logfile.log'
+    logging.basicConfig(filename=LOG_FILE,
+    level=logging.DEBUG,
+    format='%(asctime)s | %(name)s | %(levelname)s | %(message)s')
     # Start script
-    print('Create Database\n')
+    logging.info('Create Database')
 
     # calling run function
     run()
+
+    logging.info('Loaded Database. Check your Workbench environment')

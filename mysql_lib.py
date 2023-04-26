@@ -1,4 +1,5 @@
 """Module providing function mysql database connection."""
+import sys
 import mysql.connector
 from mysql.connector import Error
 
@@ -6,19 +7,21 @@ from mysql.connector import Error
 class MySQLClass:
     """Class to encapsulate MySQL method"""
 
-    def __init__(self, host_name='localhost', user_name='root', password=''):
+    def __init__(self, host_name='localhost', user_name='root', password='', logging=''):
         """Constructor of the class.
 
         Args:
             host_name (str): Database hostname.
             user_name (str): Database username.
             user_password (str): Database password.
+            logging (logging): Logging object.
         """
         self._host_name = host_name
         self._user_name= user_name
         self._password = password
         self._connection = None
         self._cursor = None
+        self._logging = logging
         self.create_server_connection(self._host_name, self._user_name, self._password)
 
 
@@ -40,9 +43,10 @@ class MySQLClass:
                 passwd=user_password,
                 auth_plugin='mysql_native_password'
             )
-            print("MySQL Database connection successful")
+            self._logging.info("MySQL Database connection successful")
         except Error as err:
-            print(f"Error: '{err}'")
+            self._logging.error("Error: '%s'", err)
+            sys.exit(0)
 
         return self._connection
 
@@ -63,9 +67,10 @@ class MySQLClass:
                 database=db_name,
                 auth_plugin='mysql_native_password'
             )
-            print("MySQL Database connection successful")
+            self._logging.info("MySQL Database connection successful")
         except Error as err:
-            print(f"Error: '{err}'")
+            self._logging.error("Error: '%s'", err)
+            sys.exit(0)
 
         return self._connection
 
@@ -78,9 +83,10 @@ class MySQLClass:
         self._cursor = self._connection.cursor()
         try:
             self._cursor.execute(query)
-            print("Database created successfully")
+            self._logging.info("Database created successfully")
         except Error as err:
-            print(f"Error: '{err}'")
+            self._logging.error("Error: '%s'", err)
+            sys.exit(0)
 
 
     def execute_query(self, query):
@@ -93,9 +99,10 @@ class MySQLClass:
         try:
             self._cursor.execute(query)
             self._connection.commit()
-            print("Query successful")
+            self._logging.info("Query successful")
         except Error as err:
-            print(f"Error: '{err}'")
+            self._logging.error("Error: '%s'", err)
+            sys.exit(0)
 
 
     def execute_list_query(self, sql, val):
@@ -119,9 +126,10 @@ class MySQLClass:
         try:
             self._cursor.executemany(sql, val)
             self._connection.commit()
-            print("Query successful")
+            self._logging.info("Query successful")
         except Error as err:
-            print(f"Error: '{err}'")
+            self._logging.error("Error: '%s'", err)
+            sys.exit(0)
 
 
     def read_query(self, query):
@@ -135,6 +143,8 @@ class MySQLClass:
         try:
             self._cursor.execute(query)
             result = self._cursor.fetchall()
+            self._logging.info("Query read successful")
             return result
         except Error as err:
-            print(f"Error: '{err}'")
+            self._logging.error("Error: '%s'", err)
+            sys.exit(0)
