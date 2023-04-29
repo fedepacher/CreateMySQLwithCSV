@@ -133,3 +133,6 @@ pass.json
 csvFiles/
 loadFiles/
 
+# sql
+*.sql
+
