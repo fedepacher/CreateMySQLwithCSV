@@ -13,6 +13,9 @@ import pandas as pd
 from mysql_lib import MySQLClass
 
 
+SQL_FILE = 'query.sql'
+LOG_FILE = 'logfile.log'
+
 def get_path(os_var=''):
     """Get path to read and store csv files.
 
@@ -144,6 +147,7 @@ def get_query_table(csv_table_files=None, column_list=None, query_list=None):
                 var_table += ','
         var_table += ') ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci;'
         query_list.append(var_table)
+
     logging.debug('Got queries to create tables')
 
 
@@ -175,8 +179,10 @@ def database_function(connection=None, db_name=''):
         connection (mysql_lib.MySQLClass): Connection object to mysql.
         db_name (str): Database name.
     """
-    create_database_query = f'CREATE DATABASE IF NOT EXISTS {db_name}'
+    create_database_query = f'CREATE DATABASE IF NOT EXISTS {db_name};'
     connection.create_database(create_database_query)
+    # Add query to the sql file
+    create_sql_query_file(create_database_query)
 
     # Create to the data base
     connection.create_db_connection(db_name) # Connect to the Database
@@ -184,6 +190,14 @@ def database_function(connection=None, db_name=''):
     # Set local configuration
     query = 'set global local_infile=true;'
     connection.execute_query(query)
+    # Add query to the sql file
+    create_sql_query_file(query)
+
+    # Set local configuration
+    query = f'USE {db_name};'
+    connection.execute_query(query)
+    # Add query to the sql file
+    create_sql_query_file(query)
 
 
 def database_create_tables(connection=None, query_list=None):
@@ -195,6 +209,8 @@ def database_create_tables(connection=None, query_list=None):
     """
     for element in query_list:
         connection.execute_query(element)
+        # Add query to the sql file
+        create_sql_query_file(element)
 
 
 def copy_file_to_mysql_folder(csv_table_files=None, os_var='', db_name='', csv_path='',
@@ -261,9 +277,22 @@ def fill_database_tables(connection=None, csv_table_files=None, separator_list=N
         query = f"LOAD DATA INFILE '{file}' INTO TABLE {table} " \
                 f"FIELDS TERMINATED BY '{separator}' ENCLOSED BY '' ESCAPED BY '' " \
                 f"LINES TERMINATED BY '\n' IGNORE 1 LINES {column_field};"
+        # Add query to the sql file
+        create_sql_query_file(query)
 
         logging.info('Tabla: %s', table)
         connection.execute_query(query)
+
+
+def create_sql_query_file(query=''):
+    """Create a query file to be imported to SQL
+
+    Args:
+        query (str): query to be written in the sql file.
+    """
+    with open (SQL_FILE, 'a', encoding='UTF-8') as file:
+        file.write(query)
+        file.write('\n')
 
 
 def run():
@@ -271,6 +300,10 @@ def run():
     column_list = []
     separator_list = []
     query_list = []
+
+    # Delete SQL File if exists
+    if os.path.exists(SQL_FILE):
+        os.remove(SQL_FILE)
 
     arg_parser = argparse.ArgumentParser()
 
@@ -335,10 +368,9 @@ def run():
 if __name__ == '__main__' :
 
     # Log configuration
-    LOG_FILE = 'logfile.log'
     logging.basicConfig(filename=LOG_FILE,
-    level=logging.DEBUG,
-    format='%(asctime)s | %(name)s | %(levelname)s | %(message)s')
+                        level=logging.DEBUG,
+                        format='%(asctime)s | %(name)s | %(levelname)s | %(message)s')
     # Start script
     logging.info('Create Database')
 
