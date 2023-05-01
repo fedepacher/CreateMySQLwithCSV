@@ -44,7 +44,7 @@ class MySQLClass:
                 auth_plugin='mysql_native_password'
             )
             self._logging.info("MySQL Database connection successful")
-        except Error as err:
+        except mysql.connector.Error as err:
             self._logging.error("Error: '%s'", err)
             sys.exit(0)
 
@@ -68,7 +68,7 @@ class MySQLClass:
                 auth_plugin='mysql_native_password'
             )
             self._logging.info("MySQL Database connection successful")
-        except Error as err:
+        except mysql.connector.Error as err:
             self._logging.error("Error: '%s'", err)
             sys.exit(0)
 
@@ -84,7 +84,7 @@ class MySQLClass:
         try:
             self._cursor.execute(query)
             self._logging.info("Database created successfully")
-        except Error as err:
+        except mysql.connector.Error as err:
             self._logging.error("Error: '%s'", err)
             sys.exit(0)
 
@@ -100,7 +100,7 @@ class MySQLClass:
             self._cursor.execute(query)
             self._connection.commit()
             self._logging.info("Query successful")
-        except Error as err:
+        except mysql.connector.Error as err:
             self._logging.error("Error: '%s'", err)
             sys.exit(0)
 
@@ -127,7 +127,7 @@ class MySQLClass:
             self._cursor.executemany(sql, val)
             self._connection.commit()
             self._logging.info("Query successful")
-        except Error as err:
+        except mysql.connector.Error as err:
             self._logging.error("Error: '%s'", err)
             sys.exit(0)
 
@@ -145,6 +145,6 @@ class MySQLClass:
             result = self._cursor.fetchall()
             self._logging.info("Query read successful")
             return result
-        except Error as err:
+        except mysql.connector.Error as err:
             self._logging.error("Error: '%s'", err)
             sys.exit(0)
