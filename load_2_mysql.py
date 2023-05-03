@@ -36,8 +36,9 @@ def get_path(os_var=''):
         load_path = 'loadFiles\\'
         csv_path = 'csvFiles\\'
     else:
-        logging.error('No Operating System detected')
-        sys.exit(0)
+        message = 'No Operating System detected'
+        logging.error(message)
+        raise OSError(message)
 
     logging.info('%s Operating System detected', os_var)
     return load_path, csv_path
@@ -255,8 +256,9 @@ def copy_file_to_mysql_folder(csv_table_files=None, os_var='', db_name='', csv_p
                   'Please read the README.md file', os_var)
             sys.exit(0)
     else:
-        logging.error('No Operating System detected')
-        sys.exit(0)
+        message = 'No Operating System detected'
+        logging.error(message)
+        raise OSError(message)
     logging.debug('Files copied to %s', path_to_csv)
 
 
