@@ -1,6 +1,6 @@
 <p align=center><img src=_src/assets/banner.png><p>
 
-# <h1 align=center> **Automatic loading of MySQL Workbench with CSV and/or Excel files** </h1>
+# <h1 align=center> **Automatically loading of MySQL Workbench with CSV and/or Excel files** </h1>
 
 
 ## Introduction
