@@ -1,6 +1,11 @@
-# CreateMySQLwithCSV
+<p align=center><img src=_src/assets/banner.png><p>
 
-Script to create MySQL DB based on CSV or Excel files.
+# <h1 align=center> **Automatic loading of MySQL Workbench with CSV and/or Excel files** </h1>
+
+
+## Introduction
+
+Script to create MySQL DB based on CSV and/or Excel files. It also create a `sql` script file.
 
 
 ## Requirement
