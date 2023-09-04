@@ -135,18 +135,18 @@ def get_query_table(csv_table_files=None, column_list=None, query_list=None):
     """
     for file, elements in zip(csv_table_files, column_list):
         table, _ = file.split('.')
-        var_table = f'CREATE TABLE IF NOT EXISTS {table} ('
+        var_table = f'CREATE TABLE IF NOT EXISTS {table} (\n'
         for index, item in enumerate(elements):
             item = item.capitalize()
             if item.lower().startswith('id'):
-                var_table += f'{item} INT'
+                var_table += f'    {item} INT'
             elif 'fecha' in item.lower():
-                var_table += f'{item} DATE'
+                var_table += f'    {item} DATE'
             else:
-                var_table += f'{item} VARCHAR(200)'
+                var_table += f'    {item} VARCHAR(200)'
             if index != len(elements) - 1:
-                var_table += ','
-        var_table += ') ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci;'
+                var_table += ',\n'
+        var_table += ') ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci;\n'
         query_list.append(var_table)
 
     logging.debug('Got queries to create tables')
@@ -278,7 +278,7 @@ def fill_database_tables(connection=None, csv_table_files=None, separator_list=N
 
         query = f"LOAD DATA INFILE '{file}' INTO TABLE {table} " \
                 f"FIELDS TERMINATED BY '{separator}' ENCLOSED BY '' ESCAPED BY '' " \
-                f"LINES TERMINATED BY '\n' IGNORE 1 LINES {column_field};"
+                f"LINES TERMINATED BY '\n' IGNORE 1 LINES {column_field};\n"
         # Add query to the sql file
         create_sql_query_file(query)
 
