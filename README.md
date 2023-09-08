@@ -53,6 +53,35 @@ The user has to create a `pass.json` file with the following content:
 
 Please complete the password with your own password, otherwise the script will crush. In case Windows OS, linux admin password is not required, but you should not delete the tag `linux`.
 
+## LINUX SYSTEM TROUBLESHOOT
+
+In case the following error appear in Linux OS
+
+```
+Error: '1290 (HY000): The MySQL server is running with the --secure-file-priv option so it cannot execute this statement'
+```
+
+Add this line to file `/etc/apparmor.d/usr.sbin.mysqld` :
+
+```
+/var/lib/mysql-files/* rw
+```
+
+Then add these 2 config lines to `/etc/mysql/my.cnf` sections:
+
+```
+[client]
+loose-local-infile = 1
+
+[mysqld]
+secure-file-priv = ""
+```
+
+Finaly, restart mysql service
+
+```
+systemctl restart mysql.service
+```
 
 ## WINDOWS SYSTEM TROUBLESHOOT
 
